@@ -22,7 +22,7 @@ public final class Updater {
 
     /** 更新源根地址：末尾必须带 /。留空则用这个默认值。 */
     public static final String DEFAULT_BASE =
-            "https://github.com/CHANGE_ME/studyboard/releases/latest/download/";
+            "https://github.com/shuovsshuai/studyboard/releases/latest/download/";
 
     private static final String TAG = "StudyUpdater";
     private static final String SP = "studyboard";
