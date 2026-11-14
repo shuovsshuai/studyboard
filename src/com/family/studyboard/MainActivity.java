@@ -217,6 +217,18 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
             }
         });
 
+        // ---------- 右下角极小版本号：方便确认自动更新是否生效 ----------
+        TextView tvVer = new TextView(this);
+        tvVer.setText("v" + Updater.currentName(this) + " (" + Updater.currentCode(this) + ")");
+        tvVer.setTextSize(9f);
+        tvVer.setTextColor(0xFF8A93A0);
+        tvVer.setAlpha(0.55f);
+        FrameLayout.LayoutParams vp = new FrameLayout.LayoutParams(-2, -2,
+                Gravity.RIGHT | Gravity.BOTTOM);
+        vp.rightMargin = (int) dp(56);
+        vp.bottomMargin = (int) dp(18);
+        root.addView(tvVer, vp);
+
         return root;
     }
 
