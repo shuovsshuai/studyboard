@@ -39,10 +39,10 @@ jobs:
             echo "::error::缺少 KEYSTORE_BASE64 密钥，无法保证与设备上版本签名一致"
             exit 1
           fi
-          echo "$KEYSTORE_BASE64" | base64 -d > android-build/keystore.jks
+          echo "$KEYSTORE_BASE64" | tr -d '\r\n ' | base64 -d > keystore.jks
+          ls -l keystore.jks
 
       - name: Build APK
-        working-directory: android-build
         env:
           REQUIRE_KEYSTORE: '1'
           KS_PASS: ${{ secrets.KS_PASS }}
@@ -53,8 +53,8 @@ jobs:
       - name: Read version
         id: ver
         run: |
-          VC=$(grep -oP 'versionCode="\K[0-9]+' android-build/AndroidManifest.xml)
-          VN=$(grep -oP 'versionName="\K[^"]+' android-build/AndroidManifest.xml)
+          VC=$(grep -oP 'versionCode="\K[0-9]+' AndroidManifest.xml)
+          VN=$(grep -oP 'versionName="\K[^"]+' AndroidManifest.xml)
           echo "code=$VC" >> "$GITHUB_OUTPUT"
           echo "name=$VN" >> "$GITHUB_OUTPUT"
           echo "构建版本 v$VN ($VC)"
@@ -62,7 +62,7 @@ jobs:
       - name: Prepare release assets
         run: |
           mkdir -p out
-          cp android-build/StudyBoard.apk out/StudyBoard.apk
+          cp StudyBoard.apk out/StudyBoard.apk
           SIZE=$(stat -c%s out/StudyBoard.apk)
           cat > out/update.json <<EOF
           {
