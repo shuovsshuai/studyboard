@@ -16,3 +16,6 @@ keystore.jks
 # 其它
 .DS_Store
 test.html
+
+# 签名辅助文件
+*.idsig
