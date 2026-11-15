@@ -14,6 +14,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -225,14 +226,97 @@ public class SettingsActivity extends Activity {
         root.setPadding((int) dp(20), (int) dp(14), (int) dp(20), (int) dp(20));
 
         root.addView(label("计划表", 18, TXT));
-        TextView help = label("每行一项，格式：开始-结束 名称|备注|提醒语\n例如：\n07:30-08:00 早读|大声读课文|该早读啦，把书翻到昨天那一页\n"
-                + "备注和提醒语可以留空，但竖线要保留", 12, SUB);
-        help.setPadding(0, (int) dp(6), 0, (int) dp(10));
+        TextView help = label("每行一项，格式：类型 时刻 时长 星星 分类 名称|备注|播报语\n"
+                + "· 随时：没有固定时刻，孩子自己点「开始」（时刻写 - ），排在右列\n"
+                + "· 定时：到点自动开始倒计时，排在左列\n"
+                + "· 日程：只提示、不计时、不给星（时长可写 0）\n"
+                + "· 接送：提前 10 分钟自动播报提醒（给家长看的）\n"
+                + "· 分类（可省略）：接送 学习 运动 娱乐 游戏 生活（决定卡片颜色）\n"
+                + "例子：\n"
+                + "接送 07:50 0 0 接送 出门上学|送大泽去学校|该出门了，别忘带书包\n"
+                + "定时 16:00 60 1 学习 写作业|今天的作业|该写作业了\n"
+                + "随时 - 30 3 学习 课外阅读|自己挑一本书|该阅读啦\n"
+                + "日程 17:00 60 0 生活 吃晚饭||吃晚饭啦", 11, SUB);
+        help.setPadding(0, (int) dp(6), 0, (int) dp(8));
         root.addView(help);
 
         final EditText plan = input("", 12, InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
         plan.setText(PlanStore.getPlanText(this));
-        root.addView(plan, new LinearLayout.LayoutParams(-1, (int) dp(210)));
+        plan.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        root.addView(plan, new LinearLayout.LayoutParams(-1, (int) dp(230)));
+
+        LinearLayout planRow = new LinearLayout(this);
+        planRow.setOrientation(LinearLayout.HORIZONTAL);
+        planRow.setPadding(0, (int) dp(8), 0, 0);
+
+        Button restorePlan = new Button(this);
+        restorePlan.setText("填入默认计划");
+        restorePlan.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                plan.setText(PlanStore.DEFAULT_PLAN);
+                Toast.makeText(SettingsActivity.this, "已填入默认计划，记得点保存", Toast.LENGTH_SHORT).show();
+            }
+        });
+        planRow.addView(restorePlan, new LinearLayout.LayoutParams((int) dp(160), (int) dp(44)));
+
+        Button check = new Button(this);
+        check.setText("校验格式");
+        LinearLayout.LayoutParams chk = new LinearLayout.LayoutParams((int) dp(140), (int) dp(44));
+        chk.leftMargin = (int) dp(10);
+        check.setLayoutParams(chk);
+        check.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                java.util.List<PlanStore.Item> l = PlanStore.parse(plan.getText().toString());
+                int star = 0, timed = 0, flex = 0, event = 0, go = 0;
+                for (PlanStore.Item it : l) {
+                    star += it.stars;
+                    if (it.type == PlanStore.T_FIXED) timed++;
+                    else if (it.type == PlanStore.T_FLEX) flex++;
+                    else if (it.type == PlanStore.T_GO) go++;
+                    else event++;
+                }
+                Toast.makeText(SettingsActivity.this,
+                        "解析到 " + l.size() + " 项：定时 " + timed + " / 随时 " + flex
+                                + " / 日程 " + event + " / 接送 " + go
+                                + "，全天共 " + star + "★",
+                        Toast.LENGTH_LONG).show();
+            }
+        });
+        planRow.addView(check);
+        root.addView(planRow);
+
+        // ---- 语音与提示音 ----
+        LinearLayout voiceRow = new LinearLayout(this);
+        voiceRow.setOrientation(LinearLayout.VERTICAL);
+        voiceRow.setPadding(0, (int) dp(12), 0, 0);
+
+        Switch swTts = new Switch(this);
+        swTts.setText("语音播报（到点提醒、开始/完成说话）");
+        swTts.setTextColor(TXT);
+        swTts.setChecked(PlanStore.ttsOn(this));
+        swTts.setOnCheckedChangeListener(new android.widget.CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(android.widget.CompoundButton b, boolean on) {
+                PlanStore.setTtsOn(SettingsActivity.this, on);
+            }
+        });
+        voiceRow.addView(swTts);
+
+        Switch swSfx = new Switch(this);
+        swSfx.setText("提示音（说话前的叮咚/门铃）");
+        swSfx.setTextColor(TXT);
+        swSfx.setChecked(PlanStore.sfxOn(this));
+        swSfx.setOnCheckedChangeListener(new android.widget.CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(android.widget.CompoundButton b, boolean on) {
+                PlanStore.setSfxOn(SettingsActivity.this, on);
+            }
+        });
+        voiceRow.addView(swSfx);
+
+        root.addView(voiceRow);
 
         LinearLayout row2 = new LinearLayout(this);
         row2.setOrientation(LinearLayout.HORIZONTAL);
@@ -487,6 +571,76 @@ public class SettingsActivity extends Activity {
             }
         });
         root.addView(appMgr);
+
+        // ---------- 星星账本（家长手动调整） ----------
+        TextView starTitle = label("星星账本", 16, TXT);
+        starTitle.setPadding(0, (int) dp(16), 0, (int) dp(4));
+        root.addView(starTitle);
+
+        final TextView starInfo = label("", 12, SUB);
+        root.addView(starInfo);
+
+        final Runnable refreshStar = new Runnable() {
+            @Override
+            public void run() {
+                PlanStore.Day d = PlanStore.loadDay(SettingsActivity.this);
+                starInfo.setText("余额 " + d.balance + " ★　今日获得 " + d.earned
+                        + " ★　今日兑换游戏 +" + d.gameBonus + " 分钟");
+            }
+        };
+        refreshStar.run();
+
+        LinearLayout starRow = new LinearLayout(this);
+        starRow.setOrientation(LinearLayout.HORIZONTAL);
+        starRow.setPadding(0, (int) dp(8), 0, 0);
+
+        Button addStar = new Button(this);
+        addStar.setText("奖励 1★");
+        addStar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                PlanStore.Day d = PlanStore.loadDay(SettingsActivity.this);
+                d.balance += 1;
+                d.earned += 1;
+                PlanStore.saveDay(SettingsActivity.this, d);
+                refreshStar.run();
+            }
+        });
+        starRow.addView(addStar, new LinearLayout.LayoutParams((int) dp(120), (int) dp(44)));
+
+        Button subStar = new Button(this);
+        subStar.setText("扣 1★");
+        LinearLayout.LayoutParams sslp = new LinearLayout.LayoutParams((int) dp(110), (int) dp(44));
+        sslp.leftMargin = (int) dp(8);
+        subStar.setLayoutParams(sslp);
+        subStar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                PlanStore.Day d = PlanStore.loadDay(SettingsActivity.this);
+                if (d.balance > 0) d.balance -= 1;
+                PlanStore.saveDay(SettingsActivity.this, d);
+                refreshStar.run();
+            }
+        });
+        starRow.addView(subStar);
+
+        Button clearBonus = new Button(this);
+        clearBonus.setText("清空今日兑换");
+        LinearLayout.LayoutParams cblp = new LinearLayout.LayoutParams((int) dp(160), (int) dp(44));
+        cblp.leftMargin = (int) dp(8);
+        clearBonus.setLayoutParams(cblp);
+        clearBonus.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                PlanStore.Day d = PlanStore.loadDay(SettingsActivity.this);
+                d.gameBonus = 0;
+                PlanStore.saveDay(SettingsActivity.this, d);
+                refreshStar.run();
+            }
+        });
+        starRow.addView(clearBonus);
+
+        root.addView(starRow);
 
         // ---------- 自动更新 ----------
         TextView upTitle = label("自动更新（从 GitHub Releases 拉取）", 16, TXT);

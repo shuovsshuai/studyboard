@@ -19,22 +19,25 @@ public class CountdownRing extends View {
     private String remain = "--:--";
     private String label = "剩余";
 
+    private int colorNormal = Color.parseColor("#3B82F6");
+    private int colorWarn = Color.parseColor("#F59E0B");
+
     public CountdownRing(Context c) {
         super(c);
         bgPaint.setStyle(Paint.Style.STROKE);
-        bgPaint.setStrokeWidth(dp(10));
-        bgPaint.setColor(Color.parseColor("#1B3350"));
+        bgPaint.setStrokeWidth(dp(11));
+        bgPaint.setColor(Color.parseColor("#E8ECF2"));
 
         fgPaint.setStyle(Paint.Style.STROKE);
-        fgPaint.setStrokeWidth(dp(10));
+        fgPaint.setStrokeWidth(dp(11));
         fgPaint.setStrokeCap(Paint.Cap.ROUND);
-        fgPaint.setColor(Color.parseColor("#4A90D9"));
+        fgPaint.setColor(colorNormal);
 
-        textPaint.setColor(Color.WHITE);
+        textPaint.setColor(Color.parseColor("#1F2937"));
         textPaint.setTextAlign(Paint.Align.CENTER);
         textPaint.setFakeBoldText(true);
 
-        labelPaint.setColor(Color.parseColor("#6B8BAE"));
+        labelPaint.setColor(Color.parseColor("#9CA3AF"));
         labelPaint.setTextAlign(Paint.Align.CENTER);
     }
 
@@ -43,10 +46,10 @@ public class CountdownRing extends View {
     }
 
     public void setData(float progress, String remain, String label, boolean warn) {
-        this.progress = progress;
+        this.progress = Math.max(0f, Math.min(1f, progress));
         this.remain = remain;
         this.label = label;
-        fgPaint.setColor(Color.parseColor(warn ? "#FFB443" : "#4A90D9"));
+        fgPaint.setColor(warn ? colorWarn : colorNormal);
         invalidate();
     }
 
@@ -62,10 +65,10 @@ public class CountdownRing extends View {
         canvas.drawArc(rect, 0, 360, false, bgPaint);
         canvas.drawArc(rect, -90, 360 * progress, false, fgPaint);
 
-        textPaint.setTextSize(size * 0.26f);
+        textPaint.setTextSize(size * 0.25f);
         canvas.drawText(remain, cx, cy + size * 0.09f, textPaint);
 
-        labelPaint.setTextSize(size * 0.11f);
-        canvas.drawText(label, cx, cy + size * 0.28f, labelPaint);
+        labelPaint.setTextSize(size * 0.10f);
+        canvas.drawText(label, cx, cy + size * 0.27f, labelPaint);
     }
 }
